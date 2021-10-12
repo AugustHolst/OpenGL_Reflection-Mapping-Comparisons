@@ -22,8 +22,7 @@ include_directories(headers/
 file(GLOB LIBRARY_SOURCES lib/glad/include/src/glad.c)
 file(GLOB PROJECT_HEADERS headers/*.h)
 file(GLOB PROJECT_SOURCES src/*.cpp)
-file(GLOB PROJECT_SHADERS Shaders/*.vs
-						Shaders/*.fs)
+file(GLOB PROJECT_SHADERS Shaders/*)
 source_group("lib" 		FILES ${LIBRARY_SOURCES})
 source_group("headers" 	FILES ${PROJECT_HEADERS})
 source_group("src" 		FILES ${PROJECT_SOURCES})

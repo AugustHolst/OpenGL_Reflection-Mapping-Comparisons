@@ -25,32 +25,45 @@ int main(int argc, const char** argv) {
 	// ------------------------------------
 	//Shader ourShader("shaders\vert.vs", "shaders\frag.fs");
 
-	unsigned char* data = new unsigned char[100 * 100 * 3];
-	for (int y = 0; y < 100; y++) {
-		for (int x = 0; x < 100; x++) {
-			data[y * 100 * 3 + x * 3		] = 0xff;
-			data[y * 100 * 3 + x * 3 + 1	] = 0x00;
-			data[y * 100 * 3 + x * 3 + 2	] = 0x00;
-		}
-	}
-
 	glfwMakeContextCurrent(window);
 
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------
 	gladLoadGL();
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
+	float vertices[] = {
+		-0.5f, -0.5f, 0.0f,
+		 0.5f, -0.5f, 0.0f,
+		 0.0f,  0.5f, 0.0f
+	};
+	unsigned int VBO;
+	glGenBuffers(1, &VBO);
+	unsigned int VAO;
+	glGenVertexArrays(1, &VAO);
 
-	Shader shader_prog ("shaders\vert.vs", "shaders\frag.fs");
+	Shader shader_prog ("../shaders/vert.vs", "../shaders/frag.fs");
 	float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	while (!glfwWindowShouldClose(window)) {
 		glClearColor(79.0f, 29.0f, 130.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		shader_prog.use();
-		color[2] = sin(glfwGetTime()) / 2.0f + 0.5f;
+		
+		glBindVertexArray(VAO);
+		// 2. copy our vertices array in a buffer for OpenGL to use
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		// 3. then set our vertex attributes pointers
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		float now = sin(glfwGetTime());
+		color[1] = now / 2.0f + 0.5f;
 		shader_prog.setVec4("ourColor", color);
+
+		shader_prog.use();
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 		
 		glfwSwapBuffers(window);
 		glfwWaitEvents();
