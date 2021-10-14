@@ -1,4 +1,4 @@
-#OpenGL repo til bachelor og øvelse.
+# OpenGL repo til bachelor og øvelse.
 ## CMakeLists
 - [x] Kører på Linux
 - [x] Kører på Windows
