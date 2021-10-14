@@ -17,7 +17,7 @@ endif()
 include_directories(headers/
                     lib/glad/include/
                     lib/glfw/include/
-					lib/glm/include
+					lib/glm/
 					/)
 
 file(GLOB LIBRARY_SOURCES lib/glad/src/glad.c)

@@ -5,8 +5,11 @@
 - [ ] Kører på Mac
 
 ## LearnOpenGL
-- [ ] Texture
-- [ ] 3D
+- [x] Texture
+- [x] 3D
+- [ ] Camera
+- [ ] Mesh
+
 
 ## Bachelor
 - [ ] Forbered repo

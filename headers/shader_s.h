@@ -3,6 +3,10 @@
 
 // System Headers
 #include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -91,9 +95,9 @@ public:
         glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
     }
 
-    void setFloat4(const std::string& name, float v1, float v2, float v3, float v4) const
+    void setMat4(const std::string& name, glm::mat4 value) const
     {
-        glUniform4f(glGetUniformLocation(ID, name.c_str()), v1, v2, v3, v4);
+        glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
     }
 
 private:

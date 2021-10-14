@@ -6,9 +6,13 @@ layout (location = 2) in vec2 inTexCoords;
 out vec3 BaseCol;
 out vec2 TexCoords;
 
+uniform mat4 model;
+uniform mat4 projview;
+
+
 void main()
 {
-    gl_Position = vec4(inPos, 1.0); // see how we directly give a vec3 to vec4's constructor
+    gl_Position = projview * model * vec4(inPos, 1.0); // see how we directly give a vec3 to vec4's constructor
 	BaseCol = inBaseCol;
 	TexCoords = inTexCoords;
 }
