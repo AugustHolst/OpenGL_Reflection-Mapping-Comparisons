@@ -8,6 +8,8 @@
 - [x] Texture
 - [x] 3D
 - [ ] Camera
+	- [x] WASD controls
+	- [ ] Mouse controls
 - [ ] Mesh
 
 

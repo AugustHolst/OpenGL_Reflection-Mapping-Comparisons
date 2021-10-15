@@ -1,3 +1,4 @@
+#include <Camera.h>
 #include <shader_s.h>
 #include <hello_s.h>
 
@@ -14,14 +15,24 @@
 #include <cstdlib>
 #include <iostream>
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void processInput(GLFWwindow* window);
+
+
+const int window_w = 640; 
+const int window_h = 480;
+//cam initialisation
+Camera cam(glm::vec3(0.0f, 0.0f, 3.0f));
+float deltaTime = 0.0f;	// Time between current frame and last frame
+float lastFrame = 0.0f;
+
 int main(int argc, const char** argv) {
 	if (!glfwInit()) { 
 		printf("Could not init glfw"); 
 		return 1;
 	}
-	
-	const int window_w = 640; const int window_h = 480;
-	
 	GLFWwindow* window = glfwCreateWindow(window_w, window_h, "Bsc", NULL, NULL);
 	if (!window) {
 		printf("Could not create glfw window");
@@ -33,16 +44,10 @@ int main(int argc, const char** argv) {
 	gladLoadGL();
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 	
+	//Shader initialisation
 	Shader shader_prog("../shaders/vert.vs", "../shaders/frag.fs");
 	
-/* 	float vertices[] = {
-		// positions          // colors           // texture coords
-		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.2f,   // bottom right
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.2f,   // bottom left
-		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
-	}; */
-	float vertices[] = {
+	constexpr float vertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
 		 0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 		 0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
@@ -85,11 +90,6 @@ int main(int argc, const char** argv) {
 		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f
 	};
-	// For element buffer object
-	unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
 	
 	unsigned int VAO, VBO, EBO;
 	glGenVertexArrays(1, &VAO);
@@ -117,20 +117,15 @@ int main(int argc, const char** argv) {
 	//
 	glm::mat4 model = glm::mat4(1.0f);
 	
-	glm::mat4 view = glm::mat4(1.0f);
-	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-	
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)window_w / (float)window_h, 0.1f, 100.0f);
-	
-	glm::mat4 projview = projection * view;
-	//glm::mat4 trans = glm::mat4(1.0f);
-	
-	//trans *= glm::scale(trans, glm::vec3( 2.0f, 2.0f, 2.0f));
+	const glm::mat4 projection = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
+	const glm::mat4 view = cam.GetViewMatrix();
 	
 	shader_prog.use();	
-	shader_prog.setMat4("projview", projview);
-	//shader_prog.setMat4("view", view);
-	shader_prog.setMat4("model", model);
+	shader_prog.setMat4("proj", projection);
+	shader_prog.setMat4("view", view);
+	// TRANSFORMATION STUFF END
+	
+
 
 	// TEXTURE STUFF BEGINS
 	//
@@ -160,9 +155,12 @@ int main(int argc, const char** argv) {
 	// TEXTURE STUFF END
 	
 	glfwFocusWindow(window);
+	
 	while (!glfwWindowShouldClose(window)) {
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, true);
+		processInput(window);
+		float curFrame = glfwGetTime();
+		deltaTime = curFrame - lastFrame;
+		lastFrame = curFrame;
 		
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.4f, 0.4f, 0.75f, 1.0f);
@@ -170,16 +168,39 @@ int main(int argc, const char** argv) {
 	
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
+		
+		shader_prog.use();
+		
+		// pass camera projection matrix to shader every frame.
+        glm::mat4 projection = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
+        shader_prog.setMat4("projection", projection);
+        // camera/view transformation.
+        glm::mat4 view = cam.GetViewMatrix();
+        shader_prog.setMat4("view", view);
+		
 		glBindVertexArray(VAO);
 		
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.25f, 0.5f, 0.0f));
+		model = glm::rotate(model, deltaTime * glm::radians(50.0f), glm::vec3(0.25f, 0.5f, 0.0f));
 		shader_prog.setMat4("model", model);
 		
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	} glfwTerminate();
 	return 0;
+}
+
+void processInput(GLFWwindow *window)
+{
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cam.ProcessKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cam.ProcessKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cam.ProcessKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cam.ProcessKeyboard(RIGHT, deltaTime);
 }
