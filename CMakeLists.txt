@@ -41,72 +41,14 @@ target_link_libraries(${PROJECT_NAME} glfw
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 	
-	
 
+# install arguments - shaders, images
+install(DIRECTORY shaders/ DESTINATION build/shaders/
+		PATTERN shader/*
+		PERMISSIONS OWNER_READ)
+		
+install(DIRECTORY res/ DESTINATION build/res/
+		PATTERN res/*
+		PERMISSIONS OWNER_READ)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if(FALSE) #fake comment
-find_package(OpenGL REQUIRED)
-add_subdirectory(lib/glfw)
-
-set(SOURCES src/main.cpp src/glad.c)
-add_executable(bisc ${SOURCES})
-
-target_link_libraries(bisc ${OPENGL_LIBRARIES} glfw)
-
-target_include_directories(bisc PUBLIC 
-						${OPENGL_INCLUDE_DIRS} 
-						${CMAKE_CURRENT_SOURCE_DIR}/src/include 
-						${CMAKE_CURRENT_SOURCE_DIR}/glfw)
-
-
-find_package(OpenGL REQUIRED)
-
-add_subdirectory(includes/glfw)
-# add_subdirectory(includes/assimp)
-
-set(GLAD ${PROJECT_SOURCE_DIR}/src/include glad.h
-         ${PROJECT_SOURCE_DIR}/src/glad.c)
-
-add_executable(bisc 
-			src/main.cpp
-			src/glad.c		)
-
-target_link_libraries(bisc ${OPENGL_LIBRARIES} glfw)
-
-target_include_directories( bisc PUBLIC
-					${OPENGL_INCLUDE_DIRS}
-					${PROJECT_SOURCE_DIR}/glfw
-					${PROJECT_SOURCE_DIR}/src/include/KHR
-					${PROJECT_SOURCE_DIR}/own)
-					
-
-endif()
+install(TARGETS ${PROJECT_NAME} DESTINATION build/bin/)
