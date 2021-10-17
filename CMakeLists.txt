@@ -2,7 +2,15 @@ cmake_minimum_required(VERSION 3.0)
 
 project(bisc)
 
+option(GLFW_BUILD_DOCS OFF)
+option(GLFW_BUILD_EXAMPLES OFF)
+option(GLFW_BUILD_TESTS OFF)
 add_subdirectory(lib/glfw)
+
+option(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
+option(ASSIMP_BUILD_SAMPLES OFF)
+option(ASSIMP_BUILD_TESTS OFF)
+add_subdirectory(lib/assimp)
 
 # specify the C++ standard
 if(MSVC)
@@ -17,6 +25,7 @@ endif()
 include_directories(headers/
                     lib/glad/include/
                     lib/glfw/include/
+					lib/assimp/include/assimp/
 					lib/glm/
 					/)
 
