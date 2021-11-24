@@ -1,4 +1,4 @@
-#include <Camera.h>
+#include <camera.h>
 #include <shader_s.h>
 #include <hello_s.h>
 
@@ -155,7 +155,7 @@ int main(int argc, const char** argv) {
 	// loading texture
 	int width, height, nrChannels;
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char *data = stbi_load("../res/cowbitch.jpg", &width, &height, &nrChannels, 0);
+	unsigned char *data = stbi_load("../res/textures/I-no-1k.png", &width, &height, &nrChannels, 0);
 	//	note: glTexImage2D()
 	//(a:3) format to store. (a:6) always 0, legacy stuff. (a:7) source format (a:8) data type of source.
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
