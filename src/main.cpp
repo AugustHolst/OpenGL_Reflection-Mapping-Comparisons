@@ -1,6 +1,6 @@
 #include <camera.h>
 #include <shader_s.h>
-#include <hello_s.h>
+#include <mesh.h>
 
 #include <stb_image.h>
 #include <glad/glad.h>
@@ -140,8 +140,6 @@ int main(int argc, const char** argv) {
 
 	// TEXTURE STUFF BEGINS
 	//
-	Hello hello("Mark");
-	
 	// generating glTexture
 	unsigned int texture1;
 	glGenTextures(1, &texture1);
