@@ -7,7 +7,7 @@ option(GLFW_BUILD_EXAMPLES OFF)
 option(GLFW_BUILD_TESTS OFF)
 add_subdirectory(lib/glfw)
 
-option(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
+# option(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
 option(ASSIMP_BUILD_SAMPLES OFF)
 option(ASSIMP_BUILD_TESTS OFF)
 add_subdirectory(lib/assimp)
@@ -44,7 +44,7 @@ add_definitions(-DGLFW_INCLUDE_NONE
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS} ${PROJECT_SHADERS} ${LIBRARY_SOURCES}) 
 
-target_link_libraries(${PROJECT_NAME} glfw
+target_link_libraries(${PROJECT_NAME} glfw assimp
                       ${GLFW_LIBRARIES} ${GLAD_LIBRARIES})
 					  
 set_target_properties(${PROJECT_NAME} PROPERTIES

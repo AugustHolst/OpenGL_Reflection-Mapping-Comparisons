@@ -1,6 +1,7 @@
 #include <camera.h>
 #include <shader_s.h>
 #include <mesh.h>
+#include <model.h>
 
 #include <stb_image.h>
 #include <glad/glad.h>
