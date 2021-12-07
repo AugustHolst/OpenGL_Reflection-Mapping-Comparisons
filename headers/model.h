@@ -99,7 +99,6 @@ class Model
 					tmp_vec2.y = mesh->mTextureCoords[0][i].y;
 					vertex.TexCoords = tmp_vec2;
 					/*
-
 					// tangent
 					tmp_vec = mesh->mTangents[i].x;
 					tmp_vec = mesh->mTangents[i].y;
@@ -127,7 +126,15 @@ class Model
 					indices.push_back(face.mIndices[j]);
 				}
 			}
-
+			Texture placeholder;
+			placeholder.id = 0;
+			placeholder.type = "placeholder";
+			placeholder.path = aiString("yo");
+			vector<Texture> placeholder_textures;
+			placeholder_textures.push_back(placeholder);
+			return Mesh(vertices, indices, placeholder_textures);
+		}
+		/*
 			// retrieving textures
 			if(mesh->mMaterialIndex >= 0)
 			{
@@ -154,6 +161,7 @@ class Model
 				textures.push_back(texture);
 			}
 		}
+		*/
 };
 
 #endif
