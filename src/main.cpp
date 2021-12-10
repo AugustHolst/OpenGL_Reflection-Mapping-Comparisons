@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <iostream>
 
+// function headers for window functions.
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -23,13 +24,15 @@ void processInput(GLFWwindow* window);
 
 const int window_w = 600; 
 const int window_h = 600;
-//cam initialisation
+
+// cam initialisation.
 Camera cam(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = window_w / 2.0f;
 float lastY = window_h / 2.0f;
 bool firstMouse = true;
 
-float deltaTime = 0.0f;	// Time between current frame and last frame
+// time between frames.
+float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 const glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
@@ -57,7 +60,7 @@ int main(int argc, const char** argv) {
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 	
 	//Shader initialisation
-	Shader shader_prog("../shaders/phong.vs", "../shaders/phong.fs");
+	Shader shader_prog("../shaders/sphere_map.vs", "../shaders/sphere_map.fs");
 	
 	
 	// TRANSFORMATION STUFF BEGINS
@@ -68,6 +71,7 @@ int main(int argc, const char** argv) {
 	glm::mat4 view = cam.GetViewMatrix();
 	
 	shader_prog.use();	
+	shader_prog.setMat4("model", model_mat);
 	shader_prog.setMat4("proj", projection);
 	shader_prog.setMat4("view", view);
 	// TRANSFORMATION STUFF END
@@ -88,19 +92,19 @@ int main(int argc, const char** argv) {
 	// loading texture
 	int width, height, nrChannels;
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char *data = stbi_load("../res/textures/planet.png", &width, &height, &nrChannels, 0);
+	unsigned char *data = stbi_load("res/textures/sky_sphere.png", &width, &height, &nrChannels, 0);
 	//	note: glTexImage2D()
 	//(a:3) format to store. (a:6) always 0, legacy stuff. (a:7) source format (a:8) data type of source.
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 	
 	stbi_image_free(data);
 	
-	shader_prog.setInt("texture1", 0);
+	shader_prog.setInt("tex_env", 0);
 	// TEXTURE STUFF END
 	
 	
 	// load a Wavefront Obj file into a Model class.
-	Model sphere = Model("../res/models/sphere_63488.obj");
+	Model sphere = Model("../res/models/cube.obj");
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -117,9 +121,9 @@ int main(int argc, const char** argv) {
 		glBindTexture(GL_TEXTURE_2D, texture1);
 		
 		//shader_prog.use();
-        shader_prog.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-        shader_prog.setVec3("lightPos", lightPos);
-        shader_prog.setVec3("viewPos", cam.Position);
+        //shader_prog.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+        //shader_prog.setVec3("lightPos", lightPos);
+        //shader_prog.setVec3("viewPos", cam.Position);
 		
 		// pass camera projection matrix to shader every frame.
         glm::mat4 projection = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
@@ -127,9 +131,10 @@ int main(int argc, const char** argv) {
         // camera/view transformation.
         glm::mat4 view = cam.GetViewMatrix();
         shader_prog.setMat4("view", view);
+		
 		// currently just rotating the cube.
-		model_mat = glm::rotate(model_mat, deltaTime * glm::radians(50.0f), glm::vec3(0.25f, 0.5f, 0.0f));
-		shader_prog.setMat4("model", model_mat);
+		// model_mat = glm::rotate(model_mat, deltaTime * glm::radians(50.0f), glm::vec3(0.25f, 0.5f, 0.0f));
+		// shader_prog.setMat4("model", model_mat);
 		
 		sphere.Draw(shader_prog);
 

@@ -52,12 +52,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 	
 
 # install arguments - shaders, images
-install(DIRECTORY shaders/ DESTINATION build/shaders/
-		PATTERN shader/*
-		PERMISSIONS OWNER_READ)
-		
-install(DIRECTORY res/ DESTINATION build/res/
-		PATTERN res/*
-		PERMISSIONS OWNER_READ)
+#-install(DIRECTORY shaders/ DESTINATION build/shaders/
+#-		PATTERN shader/*
+#-		PERMISSIONS OWNER_READ)
+
+file(INSTALL res/models/sphere_63488.obj DESTINATION res/models/)
+
+file(INSTALL res/textures/sky_sphere.png DESTINATION res/textures/)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION build/bin/)
