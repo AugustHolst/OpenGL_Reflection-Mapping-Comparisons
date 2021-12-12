@@ -60,7 +60,7 @@ int main(int argc, const char** argv) {
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 	
 	//Shader initialisation
-	Shader shader_prog("../shaders/sphere_map.vs", "../shaders/sphere_map.fs");
+	Shader shader_prog("../shaders/environment.vert", "../shaders/equirectangular.frag");
 	
 	
 	// TRANSFORMATION STUFF BEGINS
@@ -92,7 +92,7 @@ int main(int argc, const char** argv) {
 	// loading texture
 	int width, height, nrChannels;
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char *data = stbi_load("res/textures/sky_sphere.png", &width, &height, &nrChannels, 0);
+	unsigned char *data = stbi_load("../res/textures/christmas_photo_studio_05_4k.png", &width, &height, &nrChannels, 0);
 	//	note: glTexImage2D()
 	//(a:3) format to store. (a:6) always 0, legacy stuff. (a:7) source format (a:8) data type of source.
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -104,7 +104,7 @@ int main(int argc, const char** argv) {
 	
 	
 	// load a Wavefront Obj file into a Model class.
-	Model sphere = Model("../res/models/cube.obj");
+	Model sphere = Model("../res/models/sphere_116160.obj");
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
