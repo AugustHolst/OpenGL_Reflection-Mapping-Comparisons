@@ -1,6 +1,6 @@
 #version 330 core
 
-uniform mat4 model; 					// view_matrix*model_matrix
+uniform mat4 model;
 uniform mat4 view;
 uniform mat4 proj;
 
@@ -16,7 +16,6 @@ out VS_OUT
 void main()
 {
 	mat4 mv_mat = view * model;
-	
 	vec4 pos_mv = mv_mat * position;
 
 	vs_out.normal 	= mat3(mv_mat) * normal;
