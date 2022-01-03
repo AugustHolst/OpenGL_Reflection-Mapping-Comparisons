@@ -35,7 +35,19 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-const glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+
+const vector<std::string> cubemap_paths
+{
+	"../res/textures/skybox/right.jpg",
+    "../res/textures/skybox/left.jpg",
+    "../res/textures/skybox/top.jpg",
+    "../res/textures/skybox/bottom.jpg",
+    "../res/textures/skybox/front.jpg",
+	"../res/textures/skybox/back.jpg"
+};
+
 
 int main(int argc, const char** argv) {
 	if (!glfwInit()) { 
@@ -60,7 +72,7 @@ int main(int argc, const char** argv) {
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 	
 	//Shader initialisation
-	Shader shader_prog("../shaders/environment.vert", "../shaders/equirectangular.frag");
+	Shader shader_prog("../shaders/environment.vert", "../shaders/cubic.frag");
 	
 	
 	// TRANSFORMATION STUFF BEGINS
@@ -80,23 +92,43 @@ int main(int argc, const char** argv) {
 	// TEXTURE STUFF BEGINS
 	//
 	// generating glTexture
-	unsigned int texture1;
-	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D, texture1); 
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
 	// set texture wrapping/filtering options.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
+	bool cube_options = true;
+	if(cube_options) {
+		glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	} else {
+		glBindTexture(GL_TEXTURE_2D, textureID); 
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+		
 	// loading texture
 	int width, height, nrChannels;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char *data = stbi_load("../res/textures/christmas_photo_studio_05_4k.png", &width, &height, &nrChannels, 0);
-	//	note: glTexImage2D()
-	//(a:3) format to store. (a:6) always 0, legacy stuff. (a:7) source format (a:8) data type of source.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-	
+	unsigned char *data;
+	if(cube_options) {
+		for(unsigned int i = 0; i < cubemap_paths.size(); i++) {
+			data = stbi_load(cubemap_paths[i].c_str(), &width, &height, &nrChannels, 0);
+			glTexImage2D(
+				GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+			);
+		}
+	} else {
+		stbi_set_flip_vertically_on_load(true);
+		data = stbi_load("../res/textures/christmas_photo_studio_05_4k.png", &width, &height, &nrChannels, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	}
 	stbi_image_free(data);
 	
 	shader_prog.setInt("tex_env", 0);
@@ -104,7 +136,7 @@ int main(int argc, const char** argv) {
 	
 	
 	// load a Wavefront Obj file into a Model class.
-	Model sphere = Model("../res/models/sphere_116160.obj");
+	Model sphere = Model("../res/models/cube.obj");
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -118,7 +150,7 @@ int main(int argc, const char** argv) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture1);
+		glBindTexture(GL_TEXTURE_2D, textureID);
 		
 		//shader_prog.use();
         //shader_prog.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));

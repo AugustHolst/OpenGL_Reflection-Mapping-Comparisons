@@ -1,6 +1,6 @@
 #version 330 core
 
-uniform samplerCube cube_map;
+uniform samplerCube cubemap;
 
 in VS_OUT
 {
@@ -12,7 +12,7 @@ out vec4 color_out;
 
 void main ()
 {
-	vec3 r = reflect(fs_in.view, normalize(fs_in.normal));
+	vec3 r = reflect(fs_in.view_dir, normalize(fs_in.normal));
 
-	color_out = texture(tex_cubemap, r);
+	color_out = texture(cubemap, r);
 }
