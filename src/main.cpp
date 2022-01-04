@@ -1,5 +1,5 @@
 #include <camera.h>
-#include <shader_s.h>
+#include <shader.h>
 #include <mesh.h>
 #include <model.h>
 
@@ -22,6 +22,12 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
+// function headers for skybox functions.
+unsigned int setup_skybox();
+void draw_skybox(unsigned int skyboxTex, unsigned int skyboxVAO);
+
+const bool cube_options = false;
+
 const int window_w = 600; 
 const int window_h = 600;
 
@@ -36,7 +42,6 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-
 
 const vector<std::string> cubemap_paths
 {
@@ -72,20 +77,28 @@ int main(int argc, const char** argv) {
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 	
 	//Shader initialisation
-	Shader shader_prog("../shaders/environment.vert", "../shaders/cubic.frag");
 	
+	//Shader skybox_shader("../shaders/skybox.vert", "../shaders/skybox.frag");
+	Shader shader_prog = cube_options ? Shader("../shaders/environment.vert", "../shaders/cubic.frag") : Shader("../shaders/environment.vert", "../shaders/equirectangular.frag");
 	
+	//unsigned int skyboxVAO = setup_skybox();
+
 	// TRANSFORMATION STUFF BEGINS
 	//
 	glm::mat4 model_mat = glm::mat4(1.0f);
 	
-	glm::mat4 projection = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
-	glm::mat4 view = cam.GetViewMatrix();
+	glm::mat4 proj_mat = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
+	glm::mat4 view_mat = cam.GetViewMatrix();
 	
-	shader_prog.use();	
+
+	shader_prog.use();
 	shader_prog.setMat4("model", model_mat);
-	shader_prog.setMat4("proj", projection);
-	shader_prog.setMat4("view", view);
+	shader_prog.setMat4("proj", proj_mat);
+	shader_prog.setMat4("view", view_mat);
+
+	//skybox_shader.use();
+	//skybox_shader.setMat4("proj", proj_mat);
+	//skybox_shader.setMat4("view", view_mat);
 	// TRANSFORMATION STUFF END
 	
 
@@ -95,7 +108,7 @@ int main(int argc, const char** argv) {
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 	// set texture wrapping/filtering options.
-	bool cube_options = true;
+	
 	if(cube_options) {
 		glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
@@ -132,11 +145,12 @@ int main(int argc, const char** argv) {
 	stbi_image_free(data);
 	
 	shader_prog.setInt("tex_env", 0);
+	//skybox_shader.setInt("skybox", 0);
 	// TEXTURE STUFF END
 	
 	
 	// load a Wavefront Obj file into a Model class.
-	Model sphere = Model("../res/models/cube.obj");
+	Model model = Model("../res/models/cone.obj");
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -159,17 +173,24 @@ int main(int argc, const char** argv) {
 		
 		// pass camera projection matrix to shader every frame.
         glm::mat4 projection = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
-        shader_prog.setMat4("proj", projection);
-        // camera/view transformation.
-        glm::mat4 view = cam.GetViewMatrix();
-        shader_prog.setMat4("view", view);
+        view_mat = cam.GetViewMatrix();
 		
+		shader_prog.setMat4("proj", projection);
+		shader_prog.setMat4("view", view_mat);
+		
+        //skybox_shader.setMat4("proj", projection);
+		//skybox_shader.setMat4("view", view_mat);
+
 		// currently just rotating the cube.
 		// model_mat = glm::rotate(model_mat, deltaTime * glm::radians(50.0f), glm::vec3(0.25f, 0.5f, 0.0f));
 		// shader_prog.setMat4("model", model_mat);
 		
-		sphere.Draw(shader_prog);
-
+		//glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+    	//skybox_shader.use();
+    	//draw_skybox(textureID, skyboxVAO);
+		
+		model.Draw(shader_prog);
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	} glfwTerminate();
@@ -227,4 +248,53 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     cam.ProcessMouseScroll(yoffset);	
+}
+
+
+// skybox: sets up the vertex array and buffer objects. 
+// Returns: skyboxVAO
+// ----------------------------------------------------------------------
+unsigned int setup_skybox() {
+	float quad[] = {
+        // positions          
+         1.0f,  1.0f, 1.0f,
+         1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f,
+		-1.0f,  1.0f, 1.0f
+    };
+
+	unsigned int indices[] = {
+    	0, 1, 3,
+    	1, 2, 3
+	};
+   	
+    unsigned int VAO, VBO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glBindVertexArray(VAO);
+    
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
+    
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+	return VAO;
+}
+
+void draw_skybox(unsigned int skyboxTex, unsigned int skyboxVAO) {
+    unsigned int indices[] = {
+    	0, 1, 3,
+    	1, 2, 3
+	};
+   	// skybox cube
+    glBindVertexArray(skyboxVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+    glBindVertexArray(0);
+    glDepthFunc(GL_LESS); // set depth function back to default
 }

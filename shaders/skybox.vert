@@ -1,19 +1,14 @@
 #version 330 core
 
-uniform mat4 view_mat;
+layout (location = 0) in vec3 position;
 
-out VS_out
+out vec3 tc;
+
+uniform mat4 proj;
+uniform mat4 view;
+
+void main(void)
 {
-	vec3 	tc;
-} vs_out;
-
-void main() 
-{
-	vec3[4] verts = vec3[4](vec3(-1.0, -1.0, 1.0),
-							vec3( 1.0, -1.0, 1.0),
-							vec3(-1.0,  1.0, 1.0),
-							vec3( 1.0,  1.0, 1.0));
-
-	vs_out.tc = mat3(view_mat) * verts[gl_VertexID];
-	gl_Position = vec4(verts[gl_VertexID], 1.0);
+    tc = mat3(proj) * mat3(view) * position;
+    gl_Position = vec4(position, 1.0);
 }
