@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include <stdio.h>
 #include <cstdio>
@@ -26,7 +27,12 @@ void processInput(GLFWwindow* window);
 unsigned int setup_skybox();
 void draw_skybox(unsigned int skyboxTex, unsigned int skyboxVAO);
 
+// function header for texture functions.
+void load_texture(unsigned int texID, string tex_path, Shader shader, string uniform_tag);
+void load_dp_texture(unsigned int texID, string front_path, string back_path, Shader shader);
+
 const bool cube_options = false;
+const bool simple_options = false;
 
 const int window_w = 600; 
 const int window_h = 600;
@@ -79,13 +85,14 @@ int main(int argc, const char** argv) {
 	//Shader initialisation
 	
 	//Shader skybox_shader("../shaders/skybox.vert", "../shaders/skybox.frag");
-	Shader shader_prog = cube_options ? Shader("../shaders/environment.vert", "../shaders/cubic.frag") : Shader("../shaders/environment.vert", "../shaders/equirectangular.frag");
-	
+	//Shader shader_prog = cube_options ? Shader("../shaders/environment.vert", "../shaders/cubic.frag") : Shader("../shaders/environment.vert", "../shaders/equirectangular.frag");
+	Shader shader_prog("../shaders/dual_parabolic.vert", "../shaders/dual_parabolic_rect.frag");
+
 	//unsigned int skyboxVAO = setup_skybox();
 
 	// TRANSFORMATION STUFF BEGINS
 	//
-	glm::mat4 model_mat = glm::mat4(1.0f);
+	glm::mat4 model_mat = glm::mat4(0.5f);
 	
 	glm::mat4 proj_mat = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
 	glm::mat4 view_mat = cam.GetViewMatrix();
@@ -105,20 +112,32 @@ int main(int argc, const char** argv) {
 	// TEXTURE STUFF BEGINS
 	//
 	// generating glTexture
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
+	//unsigned int textureID;
+	//glGenTextures(1, &textureID);
+	
+	/*
+	unsigned int front_tex;
+	unsigned int back_tex;
+	glGenTextures(1, &front_tex);
+	load_texture(front_tex, "../res/textures/dp_front.png", shader_prog, "front_tex");
+	glGenTextures(1, &back_tex);
+	load_texture(back_tex, "../res/textures/dp_back.png", shader_prog, "back_tex");
+	*/
+	unsigned int dp_front_tex;
+	load_dp_texture(dp_front_tex, "../res/textures/paraboloids.jpg", "../res/textures/dp_back.jpg", shader_prog);
+
 	// set texture wrapping/filtering options.
 	
 	if(cube_options) {
-		glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+		//glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	} else {
-		glBindTexture(GL_TEXTURE_2D, textureID); 
+	} else if (simple_options) {
+		//glBindTexture(GL_TEXTURE_2D, textureID); 
 		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -137,20 +156,20 @@ int main(int argc, const char** argv) {
 				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
 			);
 		}
-	} else {
+	} else if(simple_options){
 		stbi_set_flip_vertically_on_load(true);
 		data = stbi_load("../res/textures/christmas_photo_studio_05_4k.png", &width, &height, &nrChannels, 0);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 	}
-	stbi_image_free(data);
+	//stbi_image_free(data);
 	
-	shader_prog.setInt("tex_env", 0);
+	//shader_prog.setInt("tex_env", 0);
 	//skybox_shader.setInt("skybox", 0);
 	// TEXTURE STUFF END
 	
 	
 	// load a Wavefront Obj file into a Model class.
-	Model model = Model("../res/models/cone.obj");
+	Model model = Model("../res/models/cube.obj");
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -163,8 +182,10 @@ int main(int argc, const char** argv) {
 		glClearColor(0.4f, 0.4f, 0.75f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textureID);
+		//glActiveTexture(GL_TEXTURE0 + dp_front_tex);
+		//glBindTexture(GL_TEXTURE_RECTANGLE, dp_front_tex);
+		//glActiveTexture(GL_TEXTURE0 + 1);
+		//glBindTexture(GL_TEXTURE_2D, back_tex);
 		
 		//shader_prog.use();
         //shader_prog.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
@@ -178,6 +199,8 @@ int main(int argc, const char** argv) {
 		shader_prog.setMat4("proj", projection);
 		shader_prog.setMat4("view", view_mat);
 		
+		shader_prog.setVec3("cam_pos", cam.Position);
+
         //skybox_shader.setMat4("proj", projection);
 		//skybox_shader.setMat4("view", view_mat);
 
@@ -191,6 +214,8 @@ int main(int argc, const char** argv) {
 		
 		model.Draw(shader_prog);
 		
+		//std::cout << "view: " << glm::to_string(view_mat) << "\n\nproj: " << glm::to_string(projection);
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	} glfwTerminate();
@@ -297,4 +322,57 @@ void draw_skybox(unsigned int skyboxTex, unsigned int skyboxVAO) {
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
     glBindVertexArray(0);
     glDepthFunc(GL_LESS); // set depth function back to default
+}
+
+void load_texture(unsigned int texID, string tex_path, Shader shader, string uniform_tag) {
+	glBindTexture(GL_TEXTURE_2D, texID); 
+		
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	
+	int width, height, nrChannels;
+	unsigned char *data;
+	
+	stbi_set_flip_vertically_on_load(true);
+	data = stbi_load(tex_path.c_str(), &width, &height, &nrChannels, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	
+	stbi_image_free(data);
+	
+	//shader.use();
+	shader.setInt(uniform_tag, 0);
+}
+
+void load_dp_texture(unsigned int texID, string front_path, string back_path, Shader shader) {
+	glGenTextures(1, &texID);
+	glActiveTexture(GL_TEXTURE0 + texID);
+	glBindTexture(GL_TEXTURE_RECTANGLE, texID);
+	
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	int width, height, nrChannels;
+	unsigned char *data;
+	
+	stbi_set_flip_vertically_on_load(true);
+	data = stbi_load(front_path.c_str(), &width, &height, &nrChannels, 0);
+	glTexImage2D(
+		GL_TEXTURE_RECTANGLE, 
+		0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+	);
+	
+	//data_b = stbi_load(back_path.c_str(), &width, &height, &nrChannels, 0);
+	//glTexImage2D(
+	//	GL_TEXTURE_RECTANGLE, 
+	//	0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data + data_b
+	//)
+	stbi_image_free(data);
+
+	shader.use();
+	shader.setInt("paraboloids", texID);
 }

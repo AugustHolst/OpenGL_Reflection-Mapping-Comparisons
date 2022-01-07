@@ -10,7 +10,7 @@ in VS_OUT
 
 out vec4 color_out;
 
-void main ()
+void main()
 {
 	vec3 r = reflect(fs_in.view_dir, normalize(fs_in.normal));
 
