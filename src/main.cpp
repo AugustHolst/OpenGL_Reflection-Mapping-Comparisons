@@ -88,11 +88,11 @@ int main(int argc, const char** argv) {
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 	
 	
-	//Shader initialisation
-	//---------------------
+	// Shader initialisation
+	// ---------------------
 	Shader skybox_shader("../shaders/skybox.vert", "../shaders/skybox.frag");
 
-	Shader spherical_shader("../shaders/environment.vert", "../shaders/cubic.frag");
+	Shader spherical_shader("../shaders/environment.vert", "../shaders/spherical.frag");
 	Shader equirectangular_shader("../shaders/environment.vert", "../shaders/equirectangular.frag");
 	Shader cubic_shader("../shaders/environment.vert", "../shaders/cubic.frag");
 	Shader parabolic_shader("../shaders/dual_parabolic.vert", "../shaders/dual_parabolic_rect.frag");
@@ -105,6 +105,8 @@ int main(int argc, const char** argv) {
 
 	//unsigned int skyboxVAO = setup_skybox();
 	
+	// Setting up model, view and projection matrix.
+	// ---------------------------------------------
 	glm::mat4 model_mat = glm::mat4(0.5f);
 	glm::mat4 proj_mat = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
 	glm::mat4 view_mat = cam.GetViewMatrix();
@@ -119,37 +121,21 @@ int main(int argc, const char** argv) {
 		shaders[i].setMat4("proj", proj_mat);
 	}
 
-	// TEXTURE STUFF BEGINS
-	//
-	// generating glTexture
-	//unsigned int textureID;
-	//glGenTextures(1, &textureID);
-	
-	/*
-	unsigned int front_tex;
-	unsigned int back_tex;
-	glGenTextures(1, &front_tex);
-	load_texture(front_tex, "../res/textures/dp_front.png", shader_prog, "front_tex");
-	glGenTextures(1, &back_tex);
-	load_texture(back_tex, "../res/textures/dp_back.png", shader_prog, "back_tex");
-	*/
-	load_texture("../res/textures/sky_sphere.jpg", spherical_shader, "spheremap");
+	// assigning textures
+	// ------------------
+	load_texture("../res/textures/smaller.jpg", spherical_shader, "tex_env");
 	load_texture("../res/textures/christmas_photo_studio_05_4k.png", equirectangular_shader, "tex_env");
 	load_cube_textures(cubemap_paths, cubic_shader, skybox_shader);
 	load_paraboloid_textures("../res/textures/paraboloids.jpg", parabolic_shader);
+	
 
-	//shader_prog.setInt("tex_env", 0);
-	//skybox_shader.setInt("skybox", 0);
-	// TEXTURE STUFF END
-	
-	
 	// load a Wavefront Obj file into a Model class.
-	Model model = Model("../res/models/cone.obj");
+	Model model = Model("../res/models/sphere_116160.obj");
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
-		float curFrame = glfwGetTime();
 		
+		float curFrame = glfwGetTime();
 		deltaTime = curFrame - lastFrame;
 		lastFrame = curFrame;
 		
@@ -157,21 +143,25 @@ int main(int argc, const char** argv) {
 		glClearColor(0.4f, 0.4f, 0.75f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-        //skybox_shader.setMat4("proj", projection);
+    
+		// pass camera projection matrix to shader every frame.
+        proj_mat = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
+        view_mat = cam.GetViewMatrix();
+
+		//skybox_shader.use();
+		//skybox_shader.setMat4("proj", proj_mat);
 		//skybox_shader.setMat4("view", view_mat);
 
 		//glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
     	//skybox_shader.use();
     	//draw_skybox(textureID, skyboxVAO);
 		
-		// pass camera projection matrix to shader every frame.
-        glm::mat4 projection = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
-        view_mat = cam.GetViewMatrix();
 		
 		shaders[current_shader].use();
-		shaders[current_shader].setMat4("proj", projection);
+		shaders[current_shader].setMat4("proj", proj_mat);
 		shaders[current_shader].setMat4("view", view_mat);
-		shaders[current_shader].setVec3("cam_pos", cam.Position);
+		if(current_shader == 4) 
+			shaders[current_shader].setVec3("cam_pos", cam.Position);
 
 		// model_mat = glm::rotate(model_mat, deltaTime * glm::radians(50.0f), glm::vec3(0.25f, 0.5f, 0.0f));
 		// shader_prog.setMat4("model", model_mat);

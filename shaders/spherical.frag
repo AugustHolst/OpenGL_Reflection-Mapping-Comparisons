@@ -1,6 +1,6 @@
 #version 330 core
 
-uniform sampler2D spheremap;
+uniform sampler2D tex_env;
 
 in VS_OUT
 {
@@ -19,9 +19,8 @@ void main()
     vec3 r = reflect(v, normalize(fs_in.normal));
     
     // compute scale factor
-    r.z += 1.0;
-    float m = 0.5 * inversesqrt(dot(r, r));
-
+    float m = 2.0 * sqrt( pow(r.x, 2.0) + pow(r.y, 2.0) + pow(r.z+1.0, 2.0) );
+    vec2 tc = r.xy / m + 0.5;
     // sample from texture using scaled and biased texture coordinate.
-    color_out = texture(tex_env, r.xy * m + vec2(0.5));
+    color_out = texture(tex_env, tc);
 }

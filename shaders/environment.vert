@@ -18,8 +18,8 @@ void main()
 	mat4 mv_mat = view * model;
 	vec4 pos_mv = mv_mat * position;
 
-	vs_out.normal 	= mat3(mv_mat) * normal;
-	vs_out.view_dir = pos_mv.xyz;
+	vs_out.normal 	= normalize(mat3(mv_mat) * normal);
+	vs_out.view_dir = normalize(pos_mv.xyz);
 
 	gl_Position = proj * pos_mv;
 }
