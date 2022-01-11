@@ -22,6 +22,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
+void key_next_shader(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 // function headers for skybox functions.
 unsigned int setup_skybox();
@@ -34,7 +35,8 @@ void load_paraboloid_textures(string tex_path, Shader shader);
 
 // index for current shader 
 // (0:sphere map, 1:equirectangular, 2:cube map, 3:dual paraboloid map)
-int current_shader = 0;
+const int shader_amount = 4;
+static int current_shader = 0;
 
 const bool cube_options = false;
 const bool simple_options = false;
@@ -80,7 +82,8 @@ int main(int argc, const char** argv) {
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	
+	glfwSetKeyCallback(window, key_next_shader);
+
 	gladLoadGL();
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 	
@@ -195,6 +198,16 @@ void processInput(GLFWwindow *window)
 		cam.ProcessKeyboard(LEFT, deltaTime);
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		cam.ProcessKeyboard(RIGHT, deltaTime);
+}
+
+void key_next_shader(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_L && action == GLFW_PRESS) {
+		(current_shader + 1 > shader_amount) ? : current_shader++;
+    }
+	if (key == GLFW_KEY_H && action == GLFW_PRESS) {
+		(current_shader - 1 < 0) ? : current_shader--;
+	}
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
