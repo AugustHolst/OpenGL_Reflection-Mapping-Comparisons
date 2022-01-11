@@ -28,8 +28,13 @@ unsigned int setup_skybox();
 void draw_skybox(unsigned int skyboxTex, unsigned int skyboxVAO);
 
 // function header for texture functions.
-void load_texture(unsigned int texID, string tex_path, Shader shader, string uniform_tag);
-void load_dp_texture(unsigned int texID, string front_path, string back_path, Shader shader);
+void load_texture(string tex_path, Shader shader, string uniform_tag);
+void load_cube_textures(vector<std::string>, Shader cubic_shader, Shader skybox_shader);
+void load_paraboloid_textures(string tex_path, Shader shader);
+
+// index for current shader 
+// (0:sphere map, 1:equirectangular, 2:cube map, 3:dual paraboloid map)
+int current_shader = 0;
 
 const bool cube_options = false;
 const bool simple_options = false;
@@ -74,40 +79,42 @@ int main(int argc, const char** argv) {
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
-	// glfw: capture mouse.
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	
-	// glad: load all OpenGL function pointers
-	// ---------------------------------------
 	gladLoadGL();
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 	
-	//Shader initialisation
 	
-	//Shader skybox_shader("../shaders/skybox.vert", "../shaders/skybox.frag");
-	//Shader shader_prog = cube_options ? Shader("../shaders/environment.vert", "../shaders/cubic.frag") : Shader("../shaders/environment.vert", "../shaders/equirectangular.frag");
-	Shader shader_prog("../shaders/dual_parabolic.vert", "../shaders/dual_parabolic_rect.frag");
+	//Shader initialisation
+	//---------------------
+	Shader skybox_shader("../shaders/skybox.vert", "../shaders/skybox.frag");
+
+	Shader spherical_shader("../shaders/environment.vert", "../shaders/cubic.frag");
+	Shader equirectangular_shader("../shaders/environment.vert", "../shaders/equirectangular.frag");
+	Shader cubic_shader("../shaders/environment.vert", "../shaders/cubic.frag");
+	Shader parabolic_shader("../shaders/dual_parabolic.vert", "../shaders/dual_parabolic_rect.frag");
+	
+	vector<Shader> shaders;
+	shaders.push_back(spherical_shader);
+	shaders.push_back(equirectangular_shader);
+	shaders.push_back(cubic_shader);
+	shaders.push_back(parabolic_shader);
 
 	//unsigned int skyboxVAO = setup_skybox();
-
-	// TRANSFORMATION STUFF BEGINS
-	//
-	glm::mat4 model_mat = glm::mat4(0.5f);
 	
+	glm::mat4 model_mat = glm::mat4(0.5f);
 	glm::mat4 proj_mat = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
 	glm::mat4 view_mat = cam.GetViewMatrix();
 	
+	skybox_shader.setMat4("view", view_mat);
+	skybox_shader.setMat4("proj", proj_mat);
 
-	shader_prog.use();
-	shader_prog.setMat4("model", model_mat);
-	shader_prog.setMat4("proj", proj_mat);
-	shader_prog.setMat4("view", view_mat);
-
-	//skybox_shader.use();
-	//skybox_shader.setMat4("proj", proj_mat);
-	//skybox_shader.setMat4("view", view_mat);
-	// TRANSFORMATION STUFF END
-	
+	for(int i = 0; i < shaders.size(); i++) {
+		shaders[i].use();
+		shaders[i].setMat4("model", model_mat);
+		shaders[i].setMat4("view", view_mat);
+		shaders[i].setMat4("proj", proj_mat);
+	}
 
 	// TEXTURE STUFF BEGINS
 	//
@@ -123,53 +130,18 @@ int main(int argc, const char** argv) {
 	glGenTextures(1, &back_tex);
 	load_texture(back_tex, "../res/textures/dp_back.png", shader_prog, "back_tex");
 	*/
-	unsigned int dp_front_tex;
-	load_dp_texture(dp_front_tex, "../res/textures/paraboloids.jpg", "../res/textures/dp_back.jpg", shader_prog);
+	load_texture("../res/textures/sky_sphere.jpg", spherical_shader, "spheremap");
+	load_texture("../res/textures/christmas_photo_studio_05_4k.png", equirectangular_shader, "tex_env");
+	load_cube_textures(cubemap_paths, cubic_shader, skybox_shader);
+	load_paraboloid_textures("../res/textures/paraboloids.jpg", parabolic_shader);
 
-	// set texture wrapping/filtering options.
-	
-	if(cube_options) {
-		//glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	} else if (simple_options) {
-		//glBindTexture(GL_TEXTURE_2D, textureID); 
-		
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	}
-		
-	// loading texture
-	int width, height, nrChannels;
-	unsigned char *data;
-	if(cube_options) {
-		for(unsigned int i = 0; i < cubemap_paths.size(); i++) {
-			data = stbi_load(cubemap_paths[i].c_str(), &width, &height, &nrChannels, 0);
-			glTexImage2D(
-				GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-			);
-		}
-	} else if(simple_options){
-		stbi_set_flip_vertically_on_load(true);
-		data = stbi_load("../res/textures/christmas_photo_studio_05_4k.png", &width, &height, &nrChannels, 0);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-	}
-	//stbi_image_free(data);
-	
 	//shader_prog.setInt("tex_env", 0);
 	//skybox_shader.setInt("skybox", 0);
 	// TEXTURE STUFF END
 	
 	
 	// load a Wavefront Obj file into a Model class.
-	Model model = Model("../res/models/cube.obj");
+	Model model = Model("../res/models/cone.obj");
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -181,41 +153,28 @@ int main(int argc, const char** argv) {
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.4f, 0.4f, 0.75f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-		//glActiveTexture(GL_TEXTURE0 + dp_front_tex);
-		//glBindTexture(GL_TEXTURE_RECTANGLE, dp_front_tex);
-		//glActiveTexture(GL_TEXTURE0 + 1);
-		//glBindTexture(GL_TEXTURE_2D, back_tex);
 		
-		//shader_prog.use();
-        //shader_prog.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-        //shader_prog.setVec3("lightPos", lightPos);
-        //shader_prog.setVec3("viewPos", cam.Position);
+        //skybox_shader.setMat4("proj", projection);
+		//skybox_shader.setMat4("view", view_mat);
+
+		//glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+    	//skybox_shader.use();
+    	//draw_skybox(textureID, skyboxVAO);
 		
 		// pass camera projection matrix to shader every frame.
         glm::mat4 projection = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
         view_mat = cam.GetViewMatrix();
 		
-		shader_prog.setMat4("proj", projection);
-		shader_prog.setMat4("view", view_mat);
-		
-		shader_prog.setVec3("cam_pos", cam.Position);
+		shaders[current_shader].use();
+		shaders[current_shader].setMat4("proj", projection);
+		shaders[current_shader].setMat4("view", view_mat);
+		shaders[current_shader].setVec3("cam_pos", cam.Position);
 
-        //skybox_shader.setMat4("proj", projection);
-		//skybox_shader.setMat4("view", view_mat);
-
-		// currently just rotating the cube.
 		// model_mat = glm::rotate(model_mat, deltaTime * glm::radians(50.0f), glm::vec3(0.25f, 0.5f, 0.0f));
 		// shader_prog.setMat4("model", model_mat);
 		
-		//glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-    	//skybox_shader.use();
-    	//draw_skybox(textureID, skyboxVAO);
+		model.Draw(shaders[current_shader]);
 		
-		model.Draw(shader_prog);
-		
-		//std::cout << "view: " << glm::to_string(view_mat) << "\n\nproj: " << glm::to_string(projection);
-
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	} glfwTerminate();
@@ -324,7 +283,10 @@ void draw_skybox(unsigned int skyboxTex, unsigned int skyboxVAO) {
     glDepthFunc(GL_LESS); // set depth function back to default
 }
 
-void load_texture(unsigned int texID, string tex_path, Shader shader, string uniform_tag) {
+void load_texture(string tex_path, Shader shader, string uniform_tag) {
+	unsigned int texID;
+	glGenTextures(1, &texID);
+	glActiveTexture(GL_TEXTURE0 + texID);
 	glBindTexture(GL_TEXTURE_2D, texID); 
 		
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -335,18 +297,49 @@ void load_texture(unsigned int texID, string tex_path, Shader shader, string uni
 	
 	int width, height, nrChannels;
 	unsigned char *data;
-	
 	stbi_set_flip_vertically_on_load(true);
 	data = stbi_load(tex_path.c_str(), &width, &height, &nrChannels, 0);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-	
 	stbi_image_free(data);
+	stbi_set_flip_vertically_on_load(false);
 	
-	//shader.use();
-	shader.setInt(uniform_tag, 0);
+	shader.use();
+	shader.setInt(uniform_tag.c_str(), texID);
 }
 
-void load_dp_texture(unsigned int texID, string front_path, string back_path, Shader shader) {
+void load_cube_textures(vector<std::string> cubemap_paths, Shader cubic_shader, Shader skybox_shader) {
+	unsigned int texID;
+	glGenTextures(1, &texID);
+	glActiveTexture(GL_TEXTURE0 + texID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texID);
+	
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	
+
+	int width, height, nrChannels;
+	unsigned char *data;
+	for(unsigned int i = 0; i < cubemap_paths.size(); i++) {
+		data = stbi_load(cubemap_paths[i].c_str(), &width, &height, &nrChannels, 0);
+		glTexImage2D(
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+		);
+		stbi_image_free(data);
+	}
+	
+	cubic_shader.use();
+	cubic_shader.setInt("cubemap", texID);
+
+	skybox_shader.use();
+	skybox_shader.setInt("skybox", texID);
+}
+
+void load_paraboloid_textures(string tex_path, Shader shader) {
+	unsigned int texID;
 	glGenTextures(1, &texID);
 	glActiveTexture(GL_TEXTURE0 + texID);
 	glBindTexture(GL_TEXTURE_RECTANGLE, texID);
@@ -358,19 +351,11 @@ void load_dp_texture(unsigned int texID, string front_path, string back_path, Sh
 
 	int width, height, nrChannels;
 	unsigned char *data;
-	
-	stbi_set_flip_vertically_on_load(true);
-	data = stbi_load(front_path.c_str(), &width, &height, &nrChannels, 0);
+	data = stbi_load(tex_path.c_str(), &width, &height, &nrChannels, 0);
 	glTexImage2D(
 		GL_TEXTURE_RECTANGLE, 
 		0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
 	);
-	
-	//data_b = stbi_load(back_path.c_str(), &width, &height, &nrChannels, 0);
-	//glTexImage2D(
-	//	GL_TEXTURE_RECTANGLE, 
-	//	0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data + data_b
-	//)
 	stbi_image_free(data);
 
 	shader.use();

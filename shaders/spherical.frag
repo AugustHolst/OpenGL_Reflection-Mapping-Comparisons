@@ -1,6 +1,6 @@
 #version 330 core
 
-uniform sampler2D tex_env;
+uniform sampler2D spheremap;
 
 in VS_OUT
 {
