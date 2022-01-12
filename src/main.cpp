@@ -30,31 +30,30 @@ void draw_skybox(unsigned int skyboxTex, unsigned int skyboxVAO);
 
 // function header for texture functions.
 void load_texture(string tex_path, Shader shader, string uniform_tag);
-void load_cube_textures(vector<std::string>, Shader cubic_shader, Shader skybox_shader);
+void load_cube_textures(vector<std::string>, Shader cubic_shader);
 void load_paraboloid_textures(string tex_path, Shader shader);
 
-// index for current shader 
-// (0:sphere map, 1:equirectangular, 2:cube map, 3:dual paraboloid map)
-const int shader_amount = 4;
-static int current_shader = 0;
-
-const bool cube_options = false;
-const bool simple_options = false;
-
+// window resolution.
 const int window_w = 600; 
 const int window_h = 600;
 
 // cam initialisation.
-Camera cam(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera cam(glm::vec3(0.0f, 0.0f, 5.0f));
 float lastX = window_w / 2.0f;
 float lastY = window_h / 2.0f;
 bool firstMouse = true;
 
+// index for current shader 
+// (0:sphere map, 1:equirectangular, 2:cube map, 3:dual paraboloid map)
+static const int shader_amount = 4;
+static int current_shader = 0;
+
+static const int model_amount = 4;
+static int current_model = 0;
+
 // time between frames.
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
-
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 const vector<std::string> cubemap_paths
 {
@@ -103,7 +102,6 @@ int main(int argc, const char** argv) {
 	shaders.push_back(cubic_shader);
 	shaders.push_back(parabolic_shader);
 
-	//unsigned int skyboxVAO = setup_skybox();
 	
 	// Setting up model, view and projection matrix.
 	// ---------------------------------------------
@@ -125,12 +123,17 @@ int main(int argc, const char** argv) {
 	// ------------------
 	load_texture("../res/textures/smaller.jpg", spherical_shader, "tex_env");
 	load_texture("../res/textures/christmas_photo_studio_05_4k.png", equirectangular_shader, "tex_env");
-	load_cube_textures(cubemap_paths, cubic_shader, skybox_shader);
+	load_cube_textures(cubemap_paths, cubic_shader);
 	load_paraboloid_textures("../res/textures/paraboloids.jpg", parabolic_shader);
 	
 
 	// load a Wavefront Obj file into a Model class.
 	Model model = Model("../res/models/sphere_116160.obj");
+	vector<Model> models;
+	models.push_back(Model("../res/models/cone.obj"));
+	models.push_back(Model("../res/models/cube.obj"));
+	models.push_back(Model("../res/models/teapot.obj"));
+	models.push_back(Model("../res/models/dragon.obj"));
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -151,12 +154,8 @@ int main(int argc, const char** argv) {
 		//skybox_shader.use();
 		//skybox_shader.setMat4("proj", proj_mat);
 		//skybox_shader.setMat4("view", view_mat);
+    	//draw_skybox(cubeMapTex, skyboxVAO);
 
-		//glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-    	//skybox_shader.use();
-    	//draw_skybox(textureID, skyboxVAO);
-		
-		
 		shaders[current_shader].use();
 		shaders[current_shader].setMat4("proj", proj_mat);
 		shaders[current_shader].setMat4("view", view_mat);
@@ -166,7 +165,7 @@ int main(int argc, const char** argv) {
 		// model_mat = glm::rotate(model_mat, deltaTime * glm::radians(50.0f), glm::vec3(0.25f, 0.5f, 0.0f));
 		// shader_prog.setMat4("model", model_mat);
 		
-		model.Draw(shaders[current_shader]);
+		models[current_model].Draw(shaders[current_shader]);
 		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -192,8 +191,14 @@ void processInput(GLFWwindow *window)
 
 void key_next_shader(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	if (key == GLFW_KEY_J && action == GLFW_PRESS) {
+		(current_model + 1 >= model_amount) ? : current_model++;
+    }
+	if (key == GLFW_KEY_K && action == GLFW_PRESS) {
+		(current_model - 1 < 0) ? : current_model--;
+    }
     if (key == GLFW_KEY_L && action == GLFW_PRESS) {
-		(current_shader + 1 > shader_amount) ? : current_shader++;
+		(current_shader + 1 >= shader_amount) ? : current_shader++;
     }
 	if (key == GLFW_KEY_H && action == GLFW_PRESS) {
 		(current_shader - 1 < 0) ? : current_shader--;
@@ -277,13 +282,15 @@ void draw_skybox(unsigned int skyboxTex, unsigned int skyboxVAO) {
     	0, 1, 3,
     	1, 2, 3
 	};
-   	// skybox cube
-    glBindVertexArray(skyboxVAO);
-    glActiveTexture(GL_TEXTURE0);
+    glDepthMask(GL_FALSE);
+    
+	glBindVertexArray(skyboxVAO);
+    glActiveTexture(GL_TEXTURE0 + skyboxTex);
     glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
     glBindVertexArray(0);
-    glDepthFunc(GL_LESS); // set depth function back to default
+    
+	glDepthMask(GL_TRUE); 
 }
 
 void load_texture(string tex_path, Shader shader, string uniform_tag) {
@@ -310,7 +317,7 @@ void load_texture(string tex_path, Shader shader, string uniform_tag) {
 	shader.setInt(uniform_tag.c_str(), texID);
 }
 
-void load_cube_textures(vector<std::string> cubemap_paths, Shader cubic_shader, Shader skybox_shader) {
+void load_cube_textures(vector<std::string> cubemap_paths, Shader shader) {
 	unsigned int texID;
 	glGenTextures(1, &texID);
 	glActiveTexture(GL_TEXTURE0 + texID);
@@ -322,7 +329,6 @@ void load_cube_textures(vector<std::string> cubemap_paths, Shader cubic_shader, 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	
-
 	int width, height, nrChannels;
 	unsigned char *data;
 	for(unsigned int i = 0; i < cubemap_paths.size(); i++) {
@@ -334,11 +340,8 @@ void load_cube_textures(vector<std::string> cubemap_paths, Shader cubic_shader, 
 		stbi_image_free(data);
 	}
 	
-	cubic_shader.use();
-	cubic_shader.setInt("cubemap", texID);
-
-	skybox_shader.use();
-	skybox_shader.setInt("skybox", texID);
+	shader.use();
+	shader.setInt("cubemap", texID);
 }
 
 void load_paraboloid_textures(string tex_path, Shader shader) {
@@ -354,12 +357,14 @@ void load_paraboloid_textures(string tex_path, Shader shader) {
 
 	int width, height, nrChannels;
 	unsigned char *data;
+	stbi_set_flip_vertically_on_load(true);
 	data = stbi_load(tex_path.c_str(), &width, &height, &nrChannels, 0);
 	glTexImage2D(
 		GL_TEXTURE_RECTANGLE, 
 		0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
 	);
 	stbi_image_free(data);
+	stbi_set_flip_vertically_on_load(false);
 
 	shader.use();
 	shader.setInt("paraboloids", texID);
