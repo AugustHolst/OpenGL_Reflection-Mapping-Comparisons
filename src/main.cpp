@@ -16,13 +16,16 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
+#include <chrono>
+#include <ctime>
 
 // function headers for window functions.
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
-void key_next_shader(GLFWwindow* window, int key, int scancode, int action, int mods);
+void render_controls(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 // function headers for skybox functions.
 unsigned int setup_skybox();
@@ -48,7 +51,7 @@ bool firstMouse = true;
 static const int shader_amount = 4;
 static int current_shader = 0;
 
-static const int model_amount = 4;
+static const int model_amount = 8;
 static int current_model = 0;
 
 // time between frames.
@@ -81,7 +84,7 @@ int main(int argc, const char** argv) {
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetKeyCallback(window, key_next_shader);
+	glfwSetKeyCallback(window, render_controls);
 
 	gladLoadGL();
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
@@ -128,13 +131,20 @@ int main(int argc, const char** argv) {
 	
 
 	// load a Wavefront Obj file into a Model class.
-	Model model = Model("../res/models/sphere_116160.obj");
 	vector<Model> models;
 	models.push_back(Model("../res/models/cone.obj"));
 	models.push_back(Model("../res/models/cube.obj"));
 	models.push_back(Model("../res/models/teapot.obj"));
 	models.push_back(Model("../res/models/dragon.obj"));
-
+	models.push_back(Model("../res/models/sphere_960.obj"));
+	models.push_back(Model("../res/models/sphere_63488.obj"));
+	models.push_back(Model("../res/models/sphere_116160.obj"));
+	models.push_back(Model("../res/models/sphere_1045440.obj"));
+	
+	int loop_counter = 0;
+	std::ofstream benchmark_file;
+	benchmark_file.open("benchmark.txt", std::ios_base::app);
+	
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
 		
@@ -146,7 +156,7 @@ int main(int argc, const char** argv) {
 		glClearColor(0.4f, 0.4f, 0.75f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-    
+
 		// pass camera projection matrix to shader every frame.
         proj_mat = glm::perspective(glm::radians(cam.Zoom), (float)window_w / (float)window_h, 0.1f, 100.0f);
         view_mat = cam.GetViewMatrix();
@@ -162,11 +172,17 @@ int main(int argc, const char** argv) {
 		if(current_shader == 4) 
 			shaders[current_shader].setVec3("cam_pos", cam.Position);
 
-		// model_mat = glm::rotate(model_mat, deltaTime * glm::radians(50.0f), glm::vec3(0.25f, 0.5f, 0.0f));
-		// shader_prog.setMat4("model", model_mat);
-		
+		std::chrono::time_point<std::chrono::system_clock> start, end;
+		start = std::chrono::system_clock::now();
+
 		models[current_model].Draw(shaders[current_shader]);
 		
+		end = std::chrono::system_clock::now();
+		std::chrono::duration<double> render_duration = end - start;
+		benchmark_file << render_duration.count() << std::endl;
+		
+		if(++loop_counter == 1000) break;
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	} glfwTerminate();
@@ -189,7 +205,7 @@ void processInput(GLFWwindow *window)
 		cam.ProcessKeyboard(RIGHT, deltaTime);
 }
 
-void key_next_shader(GLFWwindow* window, int key, int scancode, int action, int mods)
+void render_controls(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_J && action == GLFW_PRESS) {
 		(current_model + 1 >= model_amount) ? : current_model++;
