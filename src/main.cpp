@@ -71,8 +71,9 @@ const vector<std::string> cubemap_paths
 /* *
  * In the main function there is outcommented code: 
  * 		1. for rendering a skybox (based on the cubemap textures).
- * 		2. FPS_counter function call.
- * 		3. for creating benchmarks.
+ * 		2. 
+ * 		3. FPS_counter function call.
+ * 		4. for creating benchmarks.
  * */
 
 
@@ -155,14 +156,14 @@ int main(int argc, const char** argv) {
 	//benchmark_file.open("benchmark.txt", std::ios_base::app);
 	
 	// should turn off v-sync, allowing the fps to go uncapped. (Not sure if hardware specific)
-	glfwSwapInterval(0);
+	//glfwSwapInterval(0);
 	
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
 		
 		float current_time = glfwGetTime();
 		deltaTime = current_time - lastFrame;
-		lastFrame = deltaTime;
+		lastFrame = current_time;
 		
 		// FPS_counter(loop_counter, deltaTime);
 		
