@@ -41,7 +41,7 @@ const int window_w = 600;
 const int window_h = 600;
 
 // cam initialisation.
-Camera cam(glm::vec3(0.0f, 0.0f, 5.0f));
+Camera cam(glm::vec3(0.0f, 1.0f, 7.5f));
 float lastX = window_w / 2.0f;
 float lastY = window_h / 2.0f;
 bool firstMouse = true;
@@ -55,8 +55,8 @@ static const int model_amount = 8;
 static int current_model = 0;
 
 // time between frames.
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
+double deltaTime = 0.0f;
+double lastFrame = 0.0f;
 
 const vector<std::string> cubemap_paths
 {
@@ -67,6 +67,13 @@ const vector<std::string> cubemap_paths
     "../res/textures/skybox/front.jpg",
 	"../res/textures/skybox/back.jpg"
 };
+
+/* *
+ * In the main function there is outcommented code: 
+ * 		1. for rendering a skybox (based on the cubemap textures).
+ * 		2. FPS_counter function call.
+ * 		3. for creating benchmarks.
+ * */
 
 
 int main(int argc, const char** argv) {
@@ -142,15 +149,22 @@ int main(int argc, const char** argv) {
 	models.push_back(Model("../res/models/sphere_1045440.obj"));
 	
 	int loop_counter = 0;
-	std::ofstream benchmark_file;
-	benchmark_file.open("benchmark.txt", std::ios_base::app);
+	std::chrono::duration<double> testtime(1.0);
+	std::chrono::duration<double>::rep nulo = std::chrono::duration<double> (0.0).count();
+	//std::ofstream benchmark_file;
+	//benchmark_file.open("benchmark.txt", std::ios_base::app);
+	
+	// should turn off v-sync, allowing the fps to go uncapped. (Not sure if hardware specific)
+	glfwSwapInterval(0);
 	
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
 		
-		float curFrame = glfwGetTime();
-		deltaTime = curFrame - lastFrame;
-		lastFrame = curFrame;
+		float current_time = glfwGetTime();
+		deltaTime = current_time - lastFrame;
+		lastFrame = deltaTime;
+		
+		// FPS_counter(loop_counter, deltaTime);
 		
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.4f, 0.4f, 0.75f, 1.0f);
@@ -172,16 +186,15 @@ int main(int argc, const char** argv) {
 		if(current_shader == 4) 
 			shaders[current_shader].setVec3("cam_pos", cam.Position);
 
-		std::chrono::time_point<std::chrono::system_clock> start, end;
-		start = std::chrono::system_clock::now();
+		//std::chrono::time_point<std::chrono::system_clock> start, end;
+		//start = std::chrono::system_clock::now();
 
 		models[current_model].Draw(shaders[current_shader]);
 		
-		end = std::chrono::system_clock::now();
-		std::chrono::duration<double> render_duration = end - start;
-		benchmark_file << render_duration.count() << std::endl;
-		
-		if(++loop_counter == 1000) break;
+		//end = std::chrono::system_clock::now();
+		//std::chrono::duration<double> render_duration = end - start;
+		//benchmark_file << render_duration.count() << std::endl;
+		//if(++loop_counter == 1000) break;
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -384,4 +397,12 @@ void load_paraboloid_textures(string tex_path, Shader shader) {
 
 	shader.use();
 	shader.setInt("paraboloids", texID);
+}
+
+void FPS_counter(int loop_counter, double deltaTime) {
+	loop_counter++;
+	if (deltaTime >= 1.0 / 30.0) {
+		std::string FPS = std::to_string((1.0 / deltaTime) * loop_counter);
+		std::cout << FPS << std::endl;
+	}
 }
