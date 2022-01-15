@@ -132,8 +132,8 @@ int main(int argc, const char** argv) {
 
 	// assigning textures
 	// ------------------
-	load_texture("../res/textures/smaller.jpg", spherical_shader, "tex_env");
-	load_texture("../res/textures/christmas_photo_studio_05_4k.png", equirectangular_shader, "tex_env");
+	load_texture("../res/textures/sphere.jpg", spherical_shader, "tex_env");
+	load_texture("../res/textures/equirectangular.png", equirectangular_shader, "tex_env");
 	load_cube_textures(cubemap_paths, cubic_shader);
 	load_paraboloid_textures("../res/textures/paraboloids.jpg", parabolic_shader);
 	
