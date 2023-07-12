@@ -4,29 +4,26 @@
 ## CMakeLists
 - [x] Kører på Linux.
 - [x] Kører på Windows.
-- [ ] Kører på Mac.
+- [x] Kører på Mac.
 - [x] Kan installeres med shaders og textures til.
 
 ## LearnOpenGL
 - [x] Texture.
 - [x] 3D.
-- [ ] Camera:
+- [x] Camera:
 	- [x] WASD controls.
 	- [x] Mouse controls.
-- [ ] Mesh.
-- [X] Phong shading:
-	- [ ] Blinn-Phong shading.
-
-## Lettier/3d-game-shaders-for-beginners
-- [ ] Læs afsnit om Blinn-Phong.
-- [ ] Implementer Piexelization.
+- [x] Mesh.
+- [x] Phong shading:
+	- [x] Blinn-Phong shading.
 
 ## Bachelor
-- [ ] Forbered repo:
-	- [ ] Skriv klasser.
-	- [ ] Build and release virker til Mac.
-	- [ ] Sikrer at libs.
-	- [ ] Sørg for at tingene virker op til Phong-shading.
+- [x] Forbered repo:
+	- [x] Skriv klasser.
+	- [x] Build and release virker til Mac.
+	- [x] Sikrer at libs.
+	- [x] Sørg for at tingene virker op til Phong-shading.
+ - [x] Udfør tests.
 
 ## Generel
-- [ ] Fjern unødvendige .cpp og .h filer fra assimp.
+- [x] Fjern unødvendige .cpp og .h filer fra assimp.
